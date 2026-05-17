@@ -279,16 +279,19 @@ const login = useCallback(
   );
 
   const logout = useCallback(async () => {
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      await clearSession();
-    } finally {
-      reset();
-      router.replace("/login");
-      router.refresh();
-    }
-  }, [clearSession, reset, router, setLoading]);
+  try {
+    await supabase.auth.signOut({
+      scope: "global",
+    });
+  } finally {
+    reset();
+
+    // full reload to homepage
+    window.location.replace("/");
+  }
+}, [reset, setLoading, supabase]);
 
   return {
     currentUser,

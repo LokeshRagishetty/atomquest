@@ -45,7 +45,9 @@ export default function HomePage() {
 
   async function handleLogin(role: string) {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({
+  scope: "global",
+});
     } catch (error) {
       console.error(error);
     }

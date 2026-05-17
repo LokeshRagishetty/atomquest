@@ -197,36 +197,51 @@ export function useAuth() {
     };
   }, [refreshUser, reset, supabase]);
 
-  const login = useCallback(
-    async (email: string, password: string, expectedRole?: UserRole) => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+const login = useCallback(
+  async (email: string, password: string, expectedRole?: UserRole) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) {
-        await clearSession();
-        reset();
-        throw new Error(error.message);
-      }
+    if (error) {
+      await clearSession();
+      reset();
+      throw new Error(error.message);
+    }
 
-      const profile = await refreshUser();
+    const profile = await refreshUser();
 
-      if (!profile) {
-        await clearSession();
-        reset();
-        throw new Error("User profile is missing. Please contact an administrator.");
-      }
+    if (!profile) {
+      await clearSession();
+      reset();
 
-      if (expectedRole && profile.role !== expectedRole) {
-        await clearSession();
-        reset();
-        throw new Error(`This account is registered as ${profile.role}. Use ${profile.role} login.`);
-      }
+      throw new Error(
+        "User profile is missing. Please contact an administrator.",
+      );
+    }
 
-      router.replace(roleHome[profile.role]);
-      router.refresh();
-      return profile;
-    },
-    [clearSession, refreshUser, reset, router, supabase],
-  );
+    if (expectedRole && profile.role !== expectedRole) {
+      await clearSession();
+      reset();
+
+      throw new Error(
+        `This account is registered as ${profile.role}. Use ${profile.role} login.`,
+      );
+    }
+
+    // allow Supabase auth cookies/session to sync
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 500);
+    });
+
+    // force full reload so middleware sees session immediately
+    window.location.replace(roleHome[profile.role]);
+
+    return profile;
+  },
+  [clearSession, refreshUser, reset, supabase],
+);
 
   const signup = useCallback(
     async (values: SignupValues) => {

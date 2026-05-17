@@ -1,0 +1,9 @@
+- [x] Replace legacy role-switch auth with Supabase Auth signup/login/logout
+- [x] Remove sample users and fixed seed IDs
+- [x] Protect APIs and dashboards with authenticated sessions
+- [x] Replace browser-supplied actor IDs with server-side `auth.getUser()` identity
+- [x] Add production RLS policies for employees, managers, admins, check-ins, reports, and audit logs
+- [x] Run: `npm run lint`, `npm run typecheck`, `npm run build`
+- [x] Add production error boundaries, loading states, retry UI, and structured request/error logging
+- [x] Add deployment docs, migration notes, and admin bootstrap instructions
+- [ ] Manual Supabase smoke test with real employee, manager, and admin accounts

@@ -1,0 +1,3 @@
+-- Production auth uses Supabase Auth users.
+-- Public profiles are created automatically by the auth.users trigger in migrations.
+-- Intentionally no sample users, fixed IDs, goals, check-ins, or audit events are seeded.

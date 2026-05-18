@@ -17,12 +17,13 @@ export default async function EmployeeCheckinsPage() {
     .from("goals")
     .select("*")
     .eq("employee_id", auth.data.profile.id)
-    .in("status", ["approved", "submitted"])
     .order("created_at", { ascending: false });
 
   if (goalsError) throw new Error(goalsError.message);
 
-  const goals = (goalRows || []).map(mapGoalRowToGoal);
+  const goals = (goalRows || [])
+    .map(mapGoalRowToGoal)
+    .filter((goal) => goal.status === "approved" || goal.status === "submitted" || goal.sharedGoalId);
   const goalIds = goals.map((goal) => goal.id);
   const { data: checkinRows, error: checkinsError } =
     goalIds.length > 0
@@ -43,7 +44,7 @@ export default async function EmployeeCheckinsPage() {
       <div className="grid gap-4">
         {goals.length === 0 ? (
           <Card>
-            <CardContent className="p-6 text-sm text-muted-foreground">Approved or submitted goals will appear here.</CardContent>
+            <CardContent className="p-6 text-sm text-muted-foreground">Approved, submitted, or shared goals will appear here.</CardContent>
           </Card>
         ) : null}
         {goals.map((goal) => {
@@ -62,6 +63,7 @@ export default async function EmployeeCheckinsPage() {
                   <Badge variant={status === "delayed" ? "destructive" : status === "completed" ? "success" : "warning"}>
                     {status.replace("_", " ")}
                   </Badge>
+                  {goal.sharedGoalId ? <Badge variant="secondary">Shared Goal</Badge> : null}
                 </div>
               </CardHeader>
               <CardContent className="grid gap-5 lg:grid-cols-[1fr_320px]">

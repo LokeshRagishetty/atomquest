@@ -85,6 +85,7 @@ export default async function EmployeeDashboardPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold">{goal.title}</h3>
                         <Badge variant={statusVariant[progressStatus]}>{progressStatus.replace("_", " ")}</Badge>
+                        {goal.sharedGoalId ? <Badge variant="secondary">Shared Goal</Badge> : null}
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">{goal.description}</p>
                     </div>
@@ -128,7 +129,7 @@ export default async function EmployeeDashboardPage() {
           <h3 className="text-lg font-semibold">Quarterly analytics</h3>
           <DashboardFilters />
         </div>
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <div className="mt-4 grid gap-6 lg:grid-cols-3 auto-rows-fr">
           <ChartCard title="Q-o-Q trend" description="Employee / Team / Department">
             <QoqTrendChart data={buildTrendData(checkins)} />
           </ChartCard>
@@ -139,9 +140,9 @@ export default async function EmployeeDashboardPage() {
             <ThrustAreaPieChart data={buildThrustAreaData(goals)} />
           </ChartCard>
         </div>
-        <div className="mt-4">
-          <ActivityFeed />
-        </div>
+        <div className="mt-10 relative z-0">
+  <ActivityFeed />
+</div>
       </section>
     </main>
   );

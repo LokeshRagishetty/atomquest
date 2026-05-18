@@ -119,7 +119,7 @@ export function GoalList() {
           <div className="col-span-full rounded-md border p-6 text-center">No goals yet. Create your first draft.</div>
         ) : (
           goals.map((g) => (
-            <GoalCard key={g.id} goal={g} onSaved={handleSave} onDeleted={handleDelete} disabled={g.locked} />
+            <GoalCard key={g.id} goal={g} onSaved={handleSave} onDeleted={handleDelete} disabled={g.locked && !g.sharedGoalId} />
           ))
         )}
       </div>

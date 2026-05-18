@@ -5,6 +5,7 @@ import type { RouteContext } from "@/lib/api-utils";
 import { isAuthResponse, requireApiAuth } from "@/lib/auth/server";
 import type { Database } from "@/lib/supabase/database.types";
 import { mapGoalRowToGoal } from "@/lib/mappers";
+import { goalFormSchema } from "@/lib/validation/goal";
 
 export const PUT = withApiRoute("goals.update", async function PUT(req: Request, context: RouteContext) {
   const auth = await requireApiAuth(["employee", "admin"]);
@@ -18,6 +19,11 @@ export const PUT = withApiRoute("goals.update", async function PUT(req: Request,
     return NextResponse.json({ error: "goal payload is required" }, { status: 400 });
   }
 
+  const parsedGoal = goalFormSchema.safeParse(goal);
+  if (!parsedGoal.success) {
+    return NextResponse.json({ error: parsedGoal.error.issues[0]?.message ?? "Invalid goal payload." }, { status: 400 });
+  }
+
   const { data: existing, error: fetchError } = await (auth.supabase.from("goals") as any)
     .select("*")
     .eq("id", id)
@@ -26,14 +32,42 @@ export const PUT = withApiRoute("goals.update", async function PUT(req: Request,
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
   if (!existing) return NextResponse.json({ error: "Goal not found" }, { status: 404 });
 
-  const updatePayload: Database["public"]["Tables"]["goals"]["Update"] = {
-    thrust_area: goal.thrustArea,
-    title: goal.title,
-    description: goal.description,
-    uom_type: goal.uomType,
-    target: goal.target,
-    weightage: goal.weightage,
-  };
+  const values = parsedGoal.data;
+  const isOwner = existing.employee_id === auth.profile.id;
+
+  if (auth.profile.role === "employee" && !isOwner) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let updatePayload: Database["public"]["Tables"]["goals"]["Update"];
+
+  if (auth.profile.role === "employee" && existing.shared_goal_id) {
+    const attemptedImmutableChange =
+      values.thrustArea !== existing.thrust_area ||
+      values.title !== existing.title ||
+      values.description !== existing.description ||
+      values.uomType !== existing.uom_type ||
+      values.target !== existing.target;
+
+    if (attemptedImmutableChange) {
+      return NextResponse.json({ error: "Only weightage can be edited on shared goals." }, { status: 400 });
+    }
+
+    updatePayload = {
+      weightage: values.weightage,
+    };
+  } else if (auth.profile.role === "employee" && existing.locked) {
+    return NextResponse.json({ error: "Locked goals cannot be edited." }, { status: 400 });
+  } else {
+    updatePayload = {
+      thrust_area: values.thrustArea,
+      title: values.title,
+      description: values.description,
+      uom_type: values.uomType,
+      target: values.target,
+      weightage: values.weightage,
+    };
+  }
 
   const { data, error } = await (auth.supabase.from("goals") as any).update(updatePayload).eq("id", id).select().maybeSingle();
 

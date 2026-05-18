@@ -29,7 +29,11 @@ type ActivityItem = {
   new_value?: unknown;
 };
 
-export function ActivityFeed() {
+export function ActivityFeed({
+  endpoint = "/api/activity",
+}: {
+  endpoint?: string;
+}) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +63,7 @@ export function ActivityFeed() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [endpoint]);
 
   useEffect(() => loadActivity(), [loadActivity]);
 

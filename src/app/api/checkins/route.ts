@@ -4,6 +4,11 @@ import { withApiRoute } from "@/lib/api-utils";
 import { isAuthResponse, requireApiAuth } from "@/lib/auth/server";
 import type { Database } from "@/lib/supabase/database.types";
 import { calculateProgress } from "@/lib/calculate-progress";
+import { syncSharedGoalCheckins } from "@/lib/shared-checkins";
+
+type CheckinQuarter = Database["public"]["Tables"]["checkins"]["Row"]["quarter"];
+type ProgressStatus = Database["public"]["Tables"]["checkins"]["Row"]["progress_status"];
+type GoalRow = Database["public"]["Tables"]["goals"]["Row"];
 
 export const GET = withApiRoute("checkins.list", async function GET(req: Request) {
   const auth = await requireApiAuth();
@@ -57,9 +62,9 @@ export const POST = withApiRoute("checkins.upsert", async function POST(req: Req
   const progress = calculateProgress(goal.uom_type, goal.target, String(achievement));
   const insertObj: Database["public"]["Tables"]["checkins"]["Insert"] = {
     goal_id: goalId,
-    quarter,
+    quarter: quarter as CheckinQuarter,
     achievement: String(achievement),
-    progress_status: progressStatus ?? progress.progressLabel,
+    progress_status: (progressStatus ?? progress.progressLabel) as ProgressStatus,
     manager_comment: auth.profile.role === "employee" ? existing?.manager_comment ?? null : managerComment ?? null,
     completion_percentage: progress.completionPercentage,
   };
@@ -82,5 +87,15 @@ export const POST = withApiRoute("checkins.upsert", async function POST(req: Req
 
   if (logError) return NextResponse.json({ error: logError.message }, { status: 500 });
 
-  return NextResponse.json({ checkin: data });
+  const syncResult = await syncSharedGoalCheckins({
+    supabase: auth.supabase,
+    requesterRole: auth.profile.role,
+    goal: goal as GoalRow,
+    quarter: insertObj.quarter,
+    achievement: insertObj.achievement,
+    progressStatus: insertObj.progress_status,
+    managerComment: insertObj.manager_comment,
+  });
+
+  return NextResponse.json({ checkin: data, sharedSync: syncResult });
 });

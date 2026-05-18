@@ -16,6 +16,13 @@ export const goalFormSchema = z.object({
 
 export type GoalFormValues = z.infer<typeof goalFormSchema>;
 
+export const sharedGoalPayloadSchema = z.object({
+  employeeIds: z.array(z.string().uuid()).min(1, "Select at least one employee."),
+  goal: goalFormSchema,
+});
+
+export type SharedGoalPayload = z.infer<typeof sharedGoalPayloadSchema>;
+
 export function validateGoalPortfolio(goals: Array<Pick<Goal, "weightage">>) {
   if (goals.length > 8) {
     return {

@@ -6,6 +6,12 @@ import { isAuthResponse, requireApiAuth } from "@/lib/auth/server";
 import { calculateProgress } from "@/lib/calculate-progress";
 import { sendEmail } from "@/lib/email";
 import { emailTemplates } from "@/lib/email/templates";
+import { syncSharedGoalCheckins } from "@/lib/shared-checkins";
+import type { Database } from "@/lib/supabase/database.types";
+
+type CheckinQuarter = Database["public"]["Tables"]["checkins"]["Row"]["quarter"];
+type ProgressStatus = Database["public"]["Tables"]["checkins"]["Row"]["progress_status"];
+type GoalRow = Database["public"]["Tables"]["goals"]["Row"];
 
 export const PUT = withApiRoute("checkins.update", async function PUT(req: Request, context: RouteContext) {
   const auth = await requireApiAuth();
@@ -65,6 +71,16 @@ export const PUT = withApiRoute("checkins.update", async function PUT(req: Reque
 
   if (logError) return NextResponse.json({ error: logError.message }, { status: 500 });
 
+  const syncResult = await syncSharedGoalCheckins({
+    supabase: auth.supabase,
+    requesterRole: auth.profile.role,
+    goal: existing.goals as GoalRow,
+    quarter: existing.quarter as CheckinQuarter,
+    achievement: String(updatePayload.achievement ?? existing.achievement),
+    progressStatus: (updatePayload.progress_status ?? existing.progress_status) as ProgressStatus,
+    managerComment: (updatePayload.manager_comment ?? existing.manager_comment ?? null) as string | null,
+  });
+
   // Send email if manager added a comment
   if (
     auth.profile.role !== "employee" &&
@@ -87,7 +103,7 @@ export const PUT = withApiRoute("checkins.update", async function PUT(req: Reque
     }
   }
 
-  return NextResponse.json({ checkin: data });
+  return NextResponse.json({ checkin: data, sharedSync: syncResult });
 });
 
 export const DELETE = withApiRoute("checkins.delete", async function DELETE(_req: Request, context: RouteContext) {

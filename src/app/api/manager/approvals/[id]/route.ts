@@ -44,7 +44,7 @@ export const PATCH = withApiRoute("manager.approvals.update", async function PAT
 
   if (updates.status === "rejected") {
     updateObj.status = "rejected";
-    updateObj.locked = false;
+    updateObj.locked = Boolean(existing.shared_goal_id);
     updateObj.approved_by = null;
     updateObj.approved_at = null;
   }

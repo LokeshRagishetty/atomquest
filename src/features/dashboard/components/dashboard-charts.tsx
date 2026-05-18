@@ -55,7 +55,7 @@ export function QoqTrendChart({ data = [] }: { data?: TrendPoint[] }) {
           <CardDescription>Completion percentage across employee, team, and department views.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-72 w-full">
+          <div className="h-64 w-full overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" opacity={0.1} />
@@ -88,7 +88,7 @@ export function ThrustAreaPieChart({ data = [] }: { data?: PiePoint[] }) {
           <CardDescription>Weightage distribution by thrust area.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-72 w-full">
+          <div className="h-56 w-full overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
@@ -130,7 +130,7 @@ export function DepartmentPerformanceChart({ data = [] }: { data?: DepartmentPoi
           <CardDescription>Completion rate by department.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-72 w-full">
+          <div className="h-64 w-full overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>

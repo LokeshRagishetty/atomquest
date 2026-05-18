@@ -22,9 +22,15 @@ export function ChartCard({ title, description, loading, children }: { title: st
           <CardTitle className="text-base font-semibold tracking-tight">{title}</CardTitle>
           {description ? <CardDescription className="text-xs">{description}</CardDescription> : null}
         </CardHeader>
-        <CardContent>
-          {loading ? <UiSkeleton className="h-64 w-full rounded-xl" /> : <div className="h-64 w-full">{children}</div>}
-        </CardContent>
+        <CardContent className="overflow-hidden">
+  {loading ? (
+    <UiSkeleton className="h-72 w-full rounded-xl" />
+  ) : (
+    <div className="min-h-[320px] w-full overflow-hidden">
+      {children}
+    </div>
+  )}
+</CardContent>
       </Card>
     </motion.div>
   );

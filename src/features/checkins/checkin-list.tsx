@@ -63,7 +63,7 @@ export function CheckinList({ goalId, quarter }: { goalId: string; quarter: stri
     return () => {
       mounted = false;
     };
-  }, [currentUser, goalId, quarter]);
+  }, [goalId, quarter]);
 
   useEffect(() => {
   loadCheckin();

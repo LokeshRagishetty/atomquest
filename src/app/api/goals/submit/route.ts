@@ -40,9 +40,16 @@ export const POST = withApiRoute("goals.submit", async function POST(req: Reques
     return NextResponse.json({ error: validation.message }, { status: 400 });
   }
 
-  const locked = goalRows.some((goal) => goal.locked && goal.status !== "submitted");
+  const locked = goalRows.some((goal) => goal.locked && !goal.shared_goal_id && goal.status !== "submitted");
   if (locked) {
     return NextResponse.json({ error: "Locked goals cannot be submitted." }, { status: 400 });
+  }
+
+  const submittableGoalRows = goalRows.filter((goal) => !goal.shared_goal_id);
+  const submittableGoalIds = submittableGoalRows.map((goal) => goal.id);
+
+  if (submittableGoalIds.length === 0) {
+    return NextResponse.json({ updated: [], skippedSharedGoals: goalRows });
   }
 
   const updatePayload: Database["public"]["Tables"]["goals"]["Update"] = {
@@ -53,7 +60,7 @@ export const POST = withApiRoute("goals.submit", async function POST(req: Reques
   const { data, error } = await (auth.supabase.from("goals") as any)
     .update(updatePayload)
     .eq("employee_id", employeeId)
-    .in("id", goalIds)
+    .in("id", submittableGoalIds)
     .select();
 
   if (error) {
@@ -87,7 +94,7 @@ export const POST = withApiRoute("goals.submit", async function POST(req: Reques
       .single();
 
     if (managerData?.email) {
-      const titles = goalRows.map((g) => g.title).join(", ");
+      const titles = submittableGoalRows.map((g) => g.title).join(", ");
       const origin = req.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       
       await sendEmail({

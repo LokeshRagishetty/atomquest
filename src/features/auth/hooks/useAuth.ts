@@ -60,7 +60,7 @@ function buildEmployeeProfile(user: User): UserInsert {
     name,
     department,
     role: "employee",
-    manager_id: null,
+    manager_id: "e1394e1f-2d68-4d49-a37a-e379c52a10a0",
     is_active: true,
   };
 }

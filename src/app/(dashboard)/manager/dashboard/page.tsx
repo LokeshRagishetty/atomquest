@@ -11,6 +11,7 @@ import { getAuthContext } from "@/lib/auth/server";
 import { roleHome } from "@/lib/constants/navigation";
 import type { Database } from "@/lib/supabase/database.types";
 import { mapCheckinRowToCheckin, mapGoalRowToGoal } from "@/lib/mappers";
+import { SharedGoalForm } from "@/features/goals/components/shared-goal-form";
 
 type EmployeeRow = Pick<Database["public"]["Tables"]["users"]["Row"], "id" | "name" | "email" | "department">;
 
@@ -85,6 +86,7 @@ export default async function ManagerDashboardPage() {
         eyebrow="Manager Dashboard"
         title="Team approvals and check-in health"
         description="Monitor submitted goal sheets, completion windows, delayed check-ins, and team performance."
+        actions={<SharedGoalForm assignees={employeeRows} />}
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -13,8 +13,9 @@ import { getAuthContext } from "@/lib/auth/server";
 import { roleHome } from "@/lib/constants/navigation";
 import type { Database } from "@/lib/supabase/database.types";
 import { mapCheckinRowToCheckin, mapGoalRowToGoal } from "@/lib/mappers";
+import { SharedGoalForm } from "@/features/goals/components/shared-goal-form";
 
-type UserRow = Pick<Database["public"]["Tables"]["users"]["Row"], "id" | "department">;
+type UserRow = Pick<Database["public"]["Tables"]["users"]["Row"], "id" | "name" | "email" | "role" | "department" | "manager_id" | "is_active">;
 
 export default async function AdminDashboardPage() {
   const auth = await getAuthContext();
@@ -27,7 +28,7 @@ export default async function AdminDashboardPage() {
     { data: checkinRows, error: checkinsError },
     { count: auditCount, error: auditError },
   ] = await Promise.all([
-    auth.data.supabase.from("users").select("id,name,email,role,department,manager_id"),
+    auth.data.supabase.from("users").select("id,name,email,role,department,manager_id,is_active"),
     auth.data.supabase.from("goals").select("*"),
     auth.data.supabase.from("checkins").select("*"),
     auth.data.supabase.from("audit_logs").select("id", { count: "exact", head: true }),
@@ -41,6 +42,14 @@ export default async function AdminDashboardPage() {
   const goals = (goalRows || []).map(mapGoalRowToGoal);
   const checkins = (checkinRows || []).map(mapCheckinRowToCheckin);
   const userRows = (users || []) as UserRow[];
+  const employeeAssignees = userRows
+    .filter((user) => user.role === "employee" && user.is_active)
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      department: user.department,
+    }));
   const goalById = new Map(goals.map((goal) => [goal.id, goal]));
   const userById = new Map(userRows.map((user) => [user.id, user]));
   const completion = Math.round(average(checkins.map((checkin) => checkin.completionPercentage)));
@@ -62,6 +71,7 @@ export default async function AdminDashboardPage() {
         eyebrow="Admin Dashboard"
         title="Organization-wide governance"
         description="Oversee completion, departments, goal distribution, audit activity, and reporting readiness."
+        actions={<SharedGoalForm assignees={employeeAssignees} />}
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

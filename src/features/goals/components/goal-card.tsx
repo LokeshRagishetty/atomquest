@@ -49,6 +49,11 @@ export function GoalCard({
   const [editing, setEditing] = useState(false);
   const saveRef = useRef<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const isSharedGoal = Boolean(goal.sharedGoalId);
+  const canEditGoal = !goal.locked || isSharedGoal;
+  const canDeleteGoal = !goal.locked;
+  const canEditCoreFields = editing && !goal.locked && !isSharedGoal;
+  const canEditWeightage = editing && (!goal.locked || isSharedGoal);
 
   useEffect(() => {
     reset({
@@ -97,20 +102,23 @@ export function GoalCard({
 
   return (
     <Card className={`relative ${disabled ? "opacity-70" : ""}`}>
-      <CardHeader className="flex items-center justify-between">
+      <CardHeader className="flex flex-row items-start justify-between gap-3">
         <div className="space-y-2">
           <CardTitle className="text-sm font-semibold">{goal.title}</CardTitle>
-          <Badge variant={goal.status === "approved" ? "success" : goal.status === "submitted" ? "warning" : goal.status === "rejected" ? "destructive" : "outline"}>
-            {goal.status}
-          </Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={goal.status === "approved" ? "success" : goal.status === "submitted" ? "warning" : goal.status === "rejected" ? "destructive" : "outline"}>
+              {goal.status}
+            </Badge>
+            {isSharedGoal ? <Badge variant="secondary">Shared Goal</Badge> : null}
+          </div>
         </div>
-          <div className="flex items-center gap-2">
-          {!goal.locked ? (
+        <div className="flex items-center gap-2">
+          {canEditGoal ? (
             <Button size="sm" variant="ghost" onClick={() => setEditing((v) => !v)} aria-label="Edit goal">
               <Edit3 className="h-4 w-4" aria-hidden="true" />
             </Button>
           ) : null}
-          {!goal.locked ? (
+          {canDeleteGoal ? (
             <Button size="sm" variant="destructive" onClick={handleDelete} aria-label="Delete goal">
               <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -126,26 +134,26 @@ export function GoalCard({
         <form onSubmit={handleSubmit(() => {})} className="grid gap-3">
           <div className="grid gap-2">
             <Label htmlFor={`thrust-${goal.id}`}>Thrust Area</Label>
-            <Input id={`thrust-${goal.id}`} disabled={!editing || goal.locked} {...register("thrustArea")} />
+            <Input id={`thrust-${goal.id}`} disabled={!canEditCoreFields} {...register("thrustArea")} />
             {errors.thrustArea ? <p className="text-sm text-destructive">{errors.thrustArea.message}</p> : null}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor={`title-${goal.id}`}>Title</Label>
-            <Input id={`title-${goal.id}`} disabled={!editing || goal.locked || !!goal.sharedGoalId} {...register("title")} />
+            <Input id={`title-${goal.id}`} disabled={!canEditCoreFields || isSharedGoal} {...register("title")} />
             {errors.title ? <p className="text-sm text-destructive">{errors.title.message}</p> : null}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor={`description-${goal.id}`}>Description</Label>
-            <textarea id={`description-${goal.id}`} disabled={!editing || goal.locked} className="rounded-md border bg-background px-3 py-2" {...register("description")} />
+            <textarea id={`description-${goal.id}`} disabled={!canEditCoreFields} className="rounded-md border bg-background px-3 py-2" {...register("description")} />
             {errors.description ? <p className="text-sm text-destructive">{errors.description.message}</p> : null}
           </div>
 
           <div className="grid gap-2 md:grid-cols-3">
             <div className="grid gap-2">
               <Label htmlFor={`uom-${goal.id}`}>UoM Type</Label>
-              <select id={`uom-${goal.id}`} disabled={!editing || goal.locked} className="h-10 rounded-md border bg-background px-3" {...register("uomType")}>
+              <select id={`uom-${goal.id}`} disabled={!canEditCoreFields} className="h-10 rounded-md border bg-background px-3" {...register("uomType")}>
                 <option value="numeric_min">Numeric Min</option>
                 <option value="numeric_max">Numeric Max</option>
                 <option value="percentage">Percentage</option>
@@ -156,19 +164,19 @@ export function GoalCard({
 
             <div className="grid gap-2">
               <Label htmlFor={`target-${goal.id}`}>Target</Label>
-              <Input id={`target-${goal.id}`} disabled={!editing || goal.locked || !!goal.sharedGoalId} {...register("target")} />
+              <Input id={`target-${goal.id}`} disabled={!canEditCoreFields || isSharedGoal} {...register("target")} />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor={`weightage-${goal.id}`}>Weightage</Label>
-              <Input id={`weightage-${goal.id}`} disabled={!editing || goal.locked} type="number" {...register("weightage")} />
+              <Input id={`weightage-${goal.id}`} disabled={!canEditWeightage} type="number" {...register("weightage")} />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button type="button" onClick={() => setEditing(true)} disabled={isSubmitting || editing || goal.locked}>
+            <Button type="button" onClick={() => setEditing(true)} disabled={isSubmitting || editing || !canEditGoal}>
               <Save className="h-4 w-4" aria-hidden="true" />
-              <span className="ml-2">Edit draft</span>
+              <span className="ml-2">{isSharedGoal ? "Edit weightage" : "Edit draft"}</span>
             </Button>
             {toast ? <Toast message={toast} /> : null}
           </div>

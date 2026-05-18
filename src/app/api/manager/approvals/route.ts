@@ -135,18 +135,36 @@ export const POST = withApiRoute("manager.approvals.bulk_action", async function
       return NextResponse.json({ error: "Rejection comment is required" }, { status: 400 });
     }
 
-    const updateObj: Database["public"]["Tables"]["goals"]["Update"] = {
+    const baseUpdateObj: Database["public"]["Tables"]["goals"]["Update"] = {
       status: "rejected",
-      locked: false,
       review_comment: comment,
       approved_by: null,
       approved_at: null,
     };
+    const existingRows = existing as Array<Database["public"]["Tables"]["goals"]["Row"]>;
+    const sharedGoalIds = existingRows.filter((goal) => goal.shared_goal_id).map((goal) => goal.id);
+    const standardGoalIds = existingRows.filter((goal) => !goal.shared_goal_id).map((goal) => goal.id);
+    const updatedRows: Array<Database["public"]["Tables"]["goals"]["Row"]> = [];
 
-    const { data, error } = await (auth.supabase.from("goals") as any).update(updateObj).in("id", goalIds).select();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (standardGoalIds.length > 0) {
+      const { data, error } = await (auth.supabase.from("goals") as any)
+        .update({ ...baseUpdateObj, locked: false })
+        .in("id", standardGoalIds)
+        .select();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      updatedRows.push(...((data || []) as Array<Database["public"]["Tables"]["goals"]["Row"]>));
+    }
 
-    const logs = ((data || []) as Array<Database["public"]["Tables"]["goals"]["Row"]>).map((row) => ({
+    if (sharedGoalIds.length > 0) {
+      const { data, error } = await (auth.supabase.from("goals") as any)
+        .update({ ...baseUpdateObj, locked: true })
+        .in("id", sharedGoalIds)
+        .select();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      updatedRows.push(...((data || []) as Array<Database["public"]["Tables"]["goals"]["Row"]>));
+    }
+
+    const logs = updatedRows.map((row) => ({
       user_id: auth.profile.id,
       action: "reject_goal",
       entity_type: "goal",
@@ -180,7 +198,7 @@ export const POST = withApiRoute("manager.approvals.bulk_action", async function
       }
     }
 
-    return NextResponse.json({ updated: data });
+    return NextResponse.json({ updated: updatedRows });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
